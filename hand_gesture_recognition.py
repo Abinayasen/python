@@ -1,68 +1,63 @@
-import numpy as np
 import math
 import cv2
-import os
-import pyttsx3
+import numpy as np
 from keras.models import load_model
 from cvzone.HandTrackingModule import HandDetector
-from string import ascii_uppercase
-import enchant
-from tkinter import Tk, Label, Button
-from PIL import Image, ImageTk
 
-OFFSET = 29
-MODEL_PATH = '/cnn8grps_rad1_model.h5'
+model = load_model('/cnn8grps_rad1_model.h5')
+white = np.ones((400, 400, 3), np.uint8) * 255
+cv2.imwrite("C:\\Users\\devansh raval\\PycharmProjects\\pythonProject\\white.jpg", white)
 
-class SignLanguageConverter:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Sign Language to Text Converter")
-        self.root.geometry("1536x864")
+capture = cv2.VideoCapture(0)
 
-        # Initialize HandDetectors
-        hd = HandDetector(maxHands=1)
-        hd2 = HandDetector(maxHands=1)
+hd = HandDetector(maxHands=1)
+hd2 = HandDetector(maxHands=1)
 
-        # Other Variables
-        self.str = " "
-        self.ten_prev_char = [" "] * 10
-        self.words = ['HELLO', 'WORLD', 'GOOD', 'MORNING']
-        self.word = self.words[0]
+offset = 29
 
-        # Load the model
-        self.model = load_model(MODEL_PATH)
+def draw_lines(white, points, offset):
+    os = ((400 - w) // 2) - 15
+    os1 = ((400 - h) // 2) - 15
+    for t in range(0, 4, 1):
+        cv2.line(white, (points[t][0] + os, points[t][1] + os1), (points[t + 1][0] + os, points[t + 1][1] + os1), (0, 255, 0), 3)
+    # Add similar lines drawing for other ranges
 
-        # Configure widgets
-        self.T = Label(root)
-        self.T1 = Label(root)
-        self.b1 = Button(root)
-        self.b2 = Button(root)
-        self.b3 = Button(root)
-        self.b4 = Button(root)
+while True:
+    try:
+        _, frame = capture.read()
+        frame = cv2.flip(frame, 1)
+        hands = hd.findHands(frame, draw=False, flipType=True)
 
-        # Load white image
-        white_path = os.path.join("C:\\Users\\devansh raval\\PycharmProjects\\pythonProject\\white.jpg")
-        white = cv2.imread(white_path)
+        if hands:
+            hand = hands[0]
+            x, y, w, h = hand['bbox']
+            image = frame[y - offset:y + h + offset, x - offset:x + w + offset]
+            white = cv2.imread("C:\\Users\\devansh raval\\PycharmProjects\\pythonProject\\white.jpg")
 
-        # Other widget configurations
-        self.T.config(text="Sign Language To Text Conversion", font=("Courier", 30, "bold"))
-        self.T1.config(text="Character :", font=("Courier", 30, "bold"))
-        self.b1.config(text=self.words[0], font=("Courier", 20), wraplength=825, command=lambda: self.update_str(0))
-        self.b2.config(text=self.words[1], font=("Courier", 20), wraplength=825, command=lambda: self.update_str(1))
-        self.b3.config(text=self.words[2], font=("Courier", 20), wraplength=825, command=lambda: self.update_str(2))
-        self.b4.config(text=self.words[3], font=("Courier", 20), wraplength=825, command=lambda: self.update_str(3))
+            handz = hd2.findHands(image, draw=False, flipType=True)
 
-        # Other initialization logic...
+            if handz:
+                hand = handz[0]
+                pts = hand['lmList']
 
-    def update_str(self, index):
-        idx_space = self.str.rfind(" ")
-        idx_word = self.str.find(self.word, idx_space)
-        last_idx = len(self.str)
-        self.str = self.str[:idx_word] + self.words[index].upper()
+                draw_lines(white, pts, offset)
 
-    # Other methods...
+                cv2.imshow("2", white)
 
-if __name__ == "__main__":
-    root = Tk()
-    app = SignLanguageConverter(root)
-    root.mainloop()
+                white = white.reshape(1, 400, 400, 3)
+                prob = np.array(model.predict(white)[0], dtype='float32')
+                ch1 = np.argmax(prob, axis=0)
+                prob[ch1] = 0
+                ch2 = np.argmax(prob, axis=0)
+                prob[ch2] = 0
+                ch3 = np.argmax(prob, axis=0)
+                prob[ch3] = 0
+
+                pl = [ch1, ch2]
+
+                # Continue with your conditions...
+                # ...
+                
+    except Exception as e:
+        traceback.print_exc()
+
