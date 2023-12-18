@@ -20,7 +20,7 @@ def draw_lines(white, points, offset):
     os1 = ((400 - h) // 2) - 15
     for t in range(0, 4, 1):
         cv2.line(white, (points[t][0] + os, points[t][1] + os1), (points[t + 1][0] + os, points[t + 1][1] + os1), (0, 255, 0), 3)
-    # Add similar lines drawing for other ranges
+
 
 while True:
     try:
