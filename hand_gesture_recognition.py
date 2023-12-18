@@ -55,8 +55,6 @@ while True:
 
                 pl = [ch1, ch2]
 
-                # Continue with your conditions...
-                # ...
                 
     except Exception as e:
         traceback.print_exc()
